@@ -1,0 +1,143 @@
+---
+kind: pipeline
+name: Build
+
+trigger:
+  branch:
+  - main
+  event:
+  - push
+  
+### things to do:
+### 1)  is there a way to set global variables (constructed from other variables) in drone?
+###     e.g. in codefresh we can "cf_export ANCHORE_REPO=${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}"
+###     and use that across steps.
+### 1a) clean up the anchorectl secret/variable declarations
+### 2)  the subscription activate stuff is not robust, I think it assumes the registry is
+###     docker hub and I haven't tested it sufficently.  If 1) is possible, making this
+###     more robust will be easier.
+
+steps:
+
+  - name: Build Image
+    # standard docker build and push
+    image: docker
+    environment:
+      HUB_USER:
+        from_secret: hub_user
+      PASSWORD:
+        from_secret: hub_password
+    commands:
+      # set the image name/tag:  
+      # old version: DRONE_REPO:$DRONE_BUILD_NUMBER
+      # note that in this case $DRONE_REPO only works because my github username and my docker hub username are the same
+      # we have to set IMAGE here instead of globally if we want to use other variables to construct it
+      - IMAGE="${DRONE_REPO}:${DRONE_BRANCH}-drone-dev"
+      - docker build --pull --no-cache -t $${IMAGE} .
+      - echo "$${PASSWORD}" | docker login -u $${HUB_USER} --password-stdin
+      - docker push $${IMAGE}
+    volumes:
+      - name: docker_sock
+        path: /var/run/docker.sock
+
+  - name: Scan Image
+    # submit image to Anchore for scanning, and optionally break pipeline based on results
+    # using my anchore-tools until anchorectl 1.0.0 ships
+    pull: always
+    image: docker.io/pvnovarese/anchore-tools:main
+    ###
+    ### Optionally, if you don't want to use pvnovarese/anchore-tools image and would prefer to use something
+    ### standard like alpine/ubuntu etc, you can just install anchorectl on the fly with
+    ### curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b /usr/local/bin
+    ### you'll still need the same three environment vars for user/pass/url as below.
+    ###
+    environment: 
+      ANCHORECTL_USERNAME:
+        from_secret: anchorectl_username
+      ANCHORECTL_PASSWORD:
+        from_secret: anchorectl_password
+      ANCHORECTL_URL:
+        from_secret: anchorectl_url
+    commands:
+      ### same variable as above
+      - IMAGE="${DRONE_REPO}:${DRONE_BRANCH}-drone-dev"
+      ### if you're having trouble connecting, anchorectl system status can be useful for troubleshooting:
+      # - anchorectl -v system status
+      ### add image to queue, pass actual dockerfile, then wait for results
+      - anchorectl image add --force --no-auto-subscribe --wait --annotation build_tool=drone --dockerfile ./Dockerfile $${IMAGE}
+      ### check evaluation and print detailed callouts.  
+      ### If ANCHORE_FAIL_ON_POLICY is set, break the pipeline if there is a policy violation
+      - |
+        if [ "$ANCHORE_FAIL_ON_POLICY" == "true" ] ; then 
+          anchorectl image check --detail --fail-based-on-results $IMAGE ; 
+        else 
+          anchorectl image check --detail $IMAGE ; 
+        fi    
+    volumes:
+      - name: docker_sock
+        path: /var/run/docker.sock
+        
+  - name: Promote Image
+    # now that it has passed our checks, re-tag the image for production and push to registry
+    image: docker
+    environment:
+      HUB_USER:
+        from_secret: hub_user
+      PASSWORD:
+        from_secret: hub_password
+    commands:
+      - IMAGE="${DRONE_REPO}:${DRONE_BRANCH}-drone-dev"
+      - IMAGE_PROD="${DRONE_REPO}:${DRONE_BRANCH}-drone"
+      - echo "$${PASSWORD}" | docker login -u $${HUB_USER} --password-stdin
+      - docker tag $${IMAGE} $${IMAGE_PROD}
+      - docker push $${IMAGE_PROD}
+    volumes:
+      - name: docker_sock
+        path: /var/run/docker.sock
+        
+  - name: Scan Promoted Image
+    # add the newly promoted image tag to Anchore's catalog
+    # using my anchore-tools until anchorectl 1.0.0 ships
+    image: docker.io/pvnovarese/anchore-tools:main
+    environment: 
+      ANCHORECTL_USERNAME:
+        from_secret: anchorectl_username
+      ANCHORECTL_PASSWORD:
+        from_secret: anchorectl_password
+      ANCHORECTL_URL:
+        from_secret: anchorectl_url
+    commands:
+      - IMAGE_PROD="${DRONE_REPO}:${DRONE_BRANCH}-drone"
+      # add image to queue, pass actual dockerfile
+      # this time we don't need to wait for the scan to complete and we don't need to check the result
+      # just add the image to the queue and move on
+      - anchorectl image add --force --no-auto-subscribe --annotation build_tool=drone --dockerfile ./Dockerfile $${IMAGE_PROD}
+      ### optional, if you want to activate subscriptions for this image:
+      ### if you want continuous updates if new vulns are found:
+      # - anchorectl subscription activate $${IMAGE_PROD} vuln_update
+      ### if you want continuous updates if the policy evaluation changes:
+      # - anchorectl subscription activate $${IMAGE_PROD} policy_eval
+    volumes:
+      - name: docker_sock
+        path: /var/run/docker.sock
+        
+  - name: Cleanup
+    # just deleting the image tags we used to keep things tidy
+    image: docker
+    # I want to run this step regardless of whether the pipeline broke or not
+    when:
+      status:
+      - failure
+      - success
+    commands:
+      - IMAGE="${DRONE_REPO}:${DRONE_BRANCH}-drone-dev"
+      - IMAGE_PROD="${DRONE_REPO}:${DRONE_BRANCH}-drone"
+      - docker image rm $${IMAGE} $${IMAGE_PROD}
+    volumes:
+      - name: docker_sock
+        path: /var/run/docker.sock
+        
+volumes:
+  - name: docker_sock
+    host:
+      path: /var/run/docker.sock
