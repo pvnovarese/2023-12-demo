@@ -1,0 +1,87 @@
+pipeline {
+  environment {
+    //
+    // you need a credential named 'docker-hub' with your DockerID/password to push images
+    CREDENTIAL = "docker-hub"
+    DOCKER_HUB = credentials("$CREDENTIAL")
+    REGISTRY = "docker.io"
+    REPOSITORY = "${DOCKER_HUB_USR}/${JOB_BASE_NAME}"
+    BRANCH_NAME = "${GIT_BRANCH.split("/")[1]}"
+    TAG = "${BRANCH_NAME}"
+    IMAGE = "${REGISTRY}/${REPOSITORY}:demo-${TAG}"
+    //
+    // and we need credentials for anchorectl
+    //
+    ANCHORECTL_URL = credentials('Anchorectl_Url')
+    ANCHORECTL_USERNAME = credentials('Anchorectl_Username')
+    ANCHORECTL_PASSWORD = credentials('Anchorectl_Password')
+    //
+  } // end environment 
+  
+  agent any
+  
+  stages {
+    
+    stage('Checkout SCM') {
+      steps {
+        checkout scm
+      } // end steps
+    } // end stage "checkout scm"
+
+    stage ('Install and Verify Tools') {
+      steps {
+        sh """
+          which docker
+          curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v5.0.0
+          export PATH="$HOME/.local/bin/:$PATH"   
+          ### if you want to debug and check connectivity and anchorectl variables etc, 
+          anchorectl system status
+        """
+      } // end steps
+    } // end stage "Install and Verify Tools"
+    
+    stage('Build and Push Baseline Image') {
+      steps {
+        sh """
+          echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin
+          docker build -t ${IMAGE} --pull -f ./.baseline/Dockerfile-baseline .
+          docker push ${IMAGE}
+        """
+      } // end steps
+    } // end stage "Build and Push Baseline Image"
+
+    stage('Baseline Image Anchore Scan') {
+      steps {
+        sh """
+          ### you almost always should use --force when supplying a dockerfile
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --wait ${IMAGE}
+          ### clean up image
+          docker image rm ${IMAGE} || failure=1
+        """
+      } // end steps
+    } // end stage "Baseline Image Anchore Scan"
+
+    stage('Build and Push Final Image') {
+      steps {
+        sh """
+          echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin
+          docker build -t ${IMAGE} -f ./Dockerfile .
+          docker push ${IMAGE}
+        """
+      } // end steps
+    } // end stage "Build and Push Final Image"
+
+    stage('Final Image Anchore Scan') {
+      steps {
+        sh """
+          ### you almost always should use --force when supplying a dockerfile
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --wait ${IMAGE}
+          ### clean up image
+          docker image rm ${IMAGE} || failure=1
+        """
+      } // end steps
+    } // end stage "Final Image Anchore Scan"
+
+        
+  } // end stages
+} // end pipeline 
