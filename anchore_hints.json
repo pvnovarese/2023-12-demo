@@ -1,0 +1,19 @@
+{
+	"packages": [
+		{
+			"name": "vim-common",
+			"version": "2:8.2.2637-20.el9_1",
+			"origin": "CentOS",
+			"license": "Vim",
+			"size": "35558020",
+			"type": "rpm"
+		},
+		{
+			"name": "github.com/hashicorp/vault",
+			"version": "v1.13.0",
+			"location": "/apus:github.com/hashicorp/vault",
+			"license": "MPLv2.0",
+			"type": "go"
+		}
+	]
+}
