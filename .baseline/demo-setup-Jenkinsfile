@@ -50,15 +50,15 @@ pipeline {
       } // end steps
     } // end stage "Build and Push Baseline Image"
 
-    stage('Baseline Image Anchore Scan') {
+    stage('Baseline Image Anchore Scan') { 
       steps {
         sh """
           ### you almost always should use --force when supplying a dockerfile
-          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --wait ${IMAGE}
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile ${IMAGE}
           ### clean up image
           docker image rm ${IMAGE} || failure=1
         """
-      } // end steps
+      } // end steps  // I used to pass --wait to anchorectl here but I don't think it's necessary, we're not getting results
     } // end stage "Baseline Image Anchore Scan"
 
     stage('Build and Push Final Image') {
@@ -71,15 +71,15 @@ pipeline {
       } // end steps
     } // end stage "Build and Push Final Image"
 
-    stage('Final Image Anchore Scan') {
+    stage('Final Image Anchore Scan') { 
       steps {
         sh """
           ### you almost always should use --force when supplying a dockerfile
-          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --wait ${IMAGE}
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile ${IMAGE}
           ### clean up image
           docker image rm ${IMAGE} || failure=1
         """
-      } // end steps
+      } // end steps  // I used to pass --wait to anchorectl here but I don't think it's necessary, we're not getting results
     } // end stage "Final Image Anchore Scan"
 
         
