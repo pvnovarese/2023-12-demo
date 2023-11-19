@@ -44,7 +44,7 @@ pipeline {
       steps {
         sh """
           echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin
-          docker build -t ${IMAGE} --pull -f ./.baseline/Dockerfile-baseline .
+          docker build -t ${IMAGE} --pull --no-cache -f ./.baseline/Dockerfile-baseline .
           docker push ${IMAGE}
         """
       } // end steps
@@ -65,7 +65,7 @@ pipeline {
       steps {
         sh """
           echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin
-          docker build -t ${IMAGE} -f ./Dockerfile .
+          docker build -t ${IMAGE} --no-cache -f ./Dockerfile .
           docker push ${IMAGE}
         """
       } // end steps
