@@ -54,7 +54,7 @@ pipeline {
       steps {
         sh """
           ### you almost always should use --force when supplying a dockerfile
-          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile ${IMAGE}
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --annotation build_tool=jenkins --annotation scan_type=centralized --annotation build=baseline ${IMAGE}
           ### clean up image
           docker image rm ${IMAGE} || failure=1
         """
@@ -75,7 +75,7 @@ pipeline {
       steps {
         sh """
           ### you almost always should use --force when supplying a dockerfile
-          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile ${IMAGE}
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --annotation build_tool=jenkins --annotation scan_type=centralized --annotation build=iterated ${IMAGE}
           ### clean up image
           docker image rm ${IMAGE} || failure=1
         """
