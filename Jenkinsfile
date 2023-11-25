@@ -84,12 +84,12 @@ pipeline {
         //
         sh """
           ### you almost always should use --force when supplying a dockerfile
-          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --from registry --annotation build_tool=jenkins --annotation scan_type=distributed ${IMAGE}
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --wait --force --dockerfile ./Dockerfile --from registry --annotation build_tool=jenkins --annotation scan_type=distributed ${IMAGE}
           #
           ### the jenkins plugin will pull the evaluation and vulnerability output and 
           ### archive them as build artifacts, if you want to do that here, use these:
-          anchorectl image vuln ${IMAGE}
-          anchorectl image check --detail ${IMAGE}
+          ${HOME}/.local/bin/anchorectl image vuln ${IMAGE}
+          ${HOME}/.local/bin/anchorectl image check --detail ${IMAGE}
           #
           ### alternatively, if you want to break the pipeline if the policy evaluation fails,
           #
