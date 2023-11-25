@@ -69,7 +69,7 @@ pipeline {
         // don't run this pipeline very frequently)
         //
         sh """
-          curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin  
+          curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v5.0.0
           export PATH="$HOME/.local/bin/:$PATH"   
           ### you could also install grype and syft depending on what you need to do:
           # curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b $HOME/.local/bin 
@@ -84,12 +84,12 @@ pipeline {
         //
         sh """
           ### you almost always should use --force when supplying a dockerfile
-          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile ${IMAGE}
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --force --dockerfile ./Dockerfile --from registry --annotation build_tool=jenkins --annotation scan_type=distributed ${IMAGE}
           #
           ### the jenkins plugin will pull the evaluation and vulnerability output and 
           ### archive them as build artifacts, if you want to do that here, use these:
-          # anchorectl image vuln ${IMAGE}
-          # anchorectl image check --detail ${IMAGE}
+          anchorectl image vuln ${IMAGE}
+          anchorectl image check --detail ${IMAGE}
           #
           ### alternatively, if you want to break the pipeline if the policy evaluation fails,
           #
