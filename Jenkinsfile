@@ -54,7 +54,7 @@ pipeline {
       steps {
         sh """
           echo ${DOCKER_HUB_PSW} | docker login -u ${DOCKER_HUB_USR} --password-stdin
-          docker build -t ${IMAGE} --pull -f ./Dockerfile .
+          docker build -t ${IMAGE} --pull --no-cache -f ./Dockerfile .
           docker push ${IMAGE}
         """
       } // end steps
@@ -83,13 +83,18 @@ pipeline {
         // queueing the image and will check results later.
         //
         sh """
+          ### debug timing
+          date
           ### you almost always should use --force when supplying a dockerfile
           ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --wait --force --dockerfile ./Dockerfile --from registry --annotation build_tool=jenkins --annotation scan_type=distributed ${IMAGE}
           #
+          date
           ### the jenkins plugin will pull the evaluation and vulnerability output and 
           ### archive them as build artifacts, if you want to do that here, use these:
           ${HOME}/.local/bin/anchorectl image vuln ${IMAGE}
+          date
           ${HOME}/.local/bin/anchorectl image check --detail ${IMAGE}
+          date
           #
           ### alternatively, if you want to break the pipeline if the policy evaluation fails,
           #
