@@ -121,24 +121,20 @@ pipeline {
         """
       } // end steps
     } // end stage "Promote Image"        
-    
-    stage('Clean up') {
-      steps {
-        //
-        // don't need the image(s) anymore so let's rm it
-        //
-        sh 'docker image rm ${IMAGE} ${IMAGE}-prod || failure=1'
-        // the || failure=1 just allows us to continue even if one or both of the tags we're
-        // rm'ing doesn't exist (e.g. if the evaluation failed, we might end up here without 
-        // re-tagging the image, so ${BRANCH_NAME} wouldn't exist.
-        //
-        // you could also use the plugin here to generate the human-readable report and 
-        // archive the results:
-        // sh 'echo ${IMAGE} > anchore_images'
-        // anchore name: 'anchore_images', engineRetries: '300', bailOnFail: 'false'    
-      } // end steps
-    } // end stage "clean up"
-    
+        
   } // end stages
+
+  post {
+    always {
+      //
+      // don't need the image(s) anymore so let's rm it
+      //
+      sh 'docker image rm ${IMAGE} ${IMAGE}-prod || failure=1'
+      // the || failure=1 just allows us to continue even if one or both of the tags we're
+      // rm'ing doesn't exist (e.g. if the evaluation failed, we might end up here without 
+      // re-tagging the image, so ${BRANCH_NAME} wouldn't exist.
+      //
+    } // end always
+  } //end post
   
 } // end pipeline 
