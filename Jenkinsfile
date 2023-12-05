@@ -85,10 +85,12 @@ pipeline {
         sh """
           ### debug timing
           date
+          docker image ls
           ### you almost always should use --force when supplying a dockerfile
-          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --wait --force --dockerfile ./Dockerfile --from registry --annotation build_tool=jenkins --annotation scan_type=distributed ${IMAGE}
+          #${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --wait --force --dockerfile ./Dockerfile --from registry --annotation build_tool=jenkins --annotation scan_type=distributed ${IMAGE}
           #
-          date
+          ${HOME}/.local/bin/anchorectl image add --no-auto-subscribe --wait --force --dockerfile ./Dockerfile --annotation build_tool=jenkins --annotation scan_type=centralized ${IMAGE}
+          #
           ### the jenkins plugin will pull the evaluation and vulnerability output and 
           ### archive them as build artifacts, if you want to do that here, use these:
           ${HOME}/.local/bin/anchorectl image vuln ${IMAGE}
