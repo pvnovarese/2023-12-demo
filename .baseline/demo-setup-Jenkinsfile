@@ -32,7 +32,7 @@ pipeline {
       steps {
         sh """
           which docker
-          curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v5.0.0
+          curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin v5.1.0
           export PATH="$HOME/.local/bin/:$PATH"   
           ### if you want to debug and check connectivity and anchorectl variables etc, 
           anchorectl system status
