@@ -72,7 +72,7 @@ jobs:
         
     - name: Connectivity Check
       run: |
-        anchorectl version
+        anchorectl -vv version
         anchorectl system status
         anchorectl feed list
             
