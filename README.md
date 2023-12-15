@@ -15,6 +15,6 @@ Partial list of conditions that can be tested with this image:
 7. wide variety of ruby, node, python, java installed with different licenses
 8. build drift detection (see .baseline directory for Dockerfile/Jenkinsfile)
 9. Terraform RPM with BUSL license installed
+10. modify file from gzip RPM to trigger package verification gate
 
-To do:
-1. add secret scanning to distributed scan
+Secret scanning and hints file handling for distributed scanning is configured in .anchorectl.yaml
