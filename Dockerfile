@@ -21,7 +21,7 @@ RUN set -ex && \
     microdnf -y install yum-utils python3-devel python3 python3-pip nodejs shadow-utils tar gzip && \
     yum-config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo && \
     microdnf -y install terraform && \
-    curl -sSfL  https://anchorectl-releases.anchore.io/anchorectl/install.sh  | sh -s -- -b $HOME/.local/bin && \
+    curl -sSfL https://anchorectl-releases.anchore.io/anchorectl/install.sh | sh -s -- -b ${HOME}/.local/bin v5.6.0 && \
     adduser -d /xmrig mining && \
     pip3 install --index-url https://pypi.org/simple --no-cache-dir aiohttp pytest urllib3 botocore six numpy protobuf==3.20 && \
     npm install -g --cache /tmp/empty-cache debug chalk commander xmldom && \
